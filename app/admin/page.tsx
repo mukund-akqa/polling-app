@@ -11,20 +11,49 @@ interface Question {
 
 export default function page() {
   const [selectedQuestion, setSelectedQuestion] = useState<string>("");
+  const [selectedQuestionData, setSelectedQuestionData] =
+    useState<Question | null>(null);
   const router = useRouter();
 
   const handleSelectQuestion = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedQuestion(e.target.value);
+    const questionId = e.target.value;
+    setSelectedQuestion(questionId);
+
+    // Find the selected question data
+    const questionData = questions.find(
+      (question) => question.id === questionId
+    );
+    setSelectedQuestionData(questionData ? questionData : null);
   };
 
-  const handleMakeLive = () => {
-    console.log("Question made live:", selectedQuestion);
-    router.push("/");
-  };
+  const handleMakeLive = async () => {
+    try {
+      if (!selectedQuestion) {
+        console.error("No question selected");
+        return;
+      }
 
-  const selectedQuestionData: Question | undefined = questions.find(
-    (q) => q.id === selectedQuestion
-  );
+      const response = await fetch("/api/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: selectedQuestionData?.text,
+          options: selectedQuestionData?.options,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Poll made live successfully");
+        router.push("/");
+      } else {
+        console.error("Failed to make poll live");
+      }
+    } catch (error) {
+      console.error("Error making poll live:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
