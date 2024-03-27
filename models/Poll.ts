@@ -20,6 +20,7 @@ const pollSchema = new mongoose.Schema({
     ],
     required: true,
   },
+
   active: {
     type: Boolean,
     default: false,
