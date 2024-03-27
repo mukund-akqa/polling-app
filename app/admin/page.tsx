@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import questions from "../../poll.json";
 import { useRouter } from "next/navigation";
 
@@ -11,9 +11,28 @@ interface Question {
 
 export default function page() {
   const [selectedQuestion, setSelectedQuestion] = useState<string>("");
+  const [activePoll, setActivePoll] = useState<boolean>(false);
   const [selectedQuestionData, setSelectedQuestionData] =
     useState<Question | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchActivePollStatus = async () => {
+      try {
+        const response = await fetch("/api/admin");
+        if (response.ok) {
+          const data = await response.json();
+          setActivePoll(data.active);
+        } else {
+          console.error("Failed to fetch active poll status");
+        }
+      } catch (error) {
+        console.error("Error fetching active poll status:", error);
+      }
+    };
+
+    fetchActivePollStatus();
+  }, []);
 
   const handleSelectQuestion = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const questionId = e.target.value;
@@ -55,6 +74,29 @@ export default function page() {
     }
   };
 
+  const handleClosePoll = async () => {
+    try {
+      const response = await fetch("/api/admin/pollstatus", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          closeActivePoll: true, // Indicating to close the active poll
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Active poll closed successfully");
+        router.push("/");
+      } else {
+        console.error("Failed to close active poll");
+      }
+    } catch (error) {
+      console.error("Error closing active poll:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="text-3xl font-bold mb-6">Admin Page</h1>
@@ -89,13 +131,22 @@ export default function page() {
           </div>
         )}
       </div>
-      <button
-        className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        onClick={handleMakeLive}
-        disabled={!selectedQuestion}
-      >
-        Make Live
-      </button>
+      {activePoll ? (
+        <button
+          className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          onClick={handleClosePoll}
+        >
+          Close Active Poll and Create New
+        </button>
+      ) : (
+        <button
+          className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={handleMakeLive}
+          disabled={!selectedQuestion}
+        >
+          Make Live
+        </button>
+      )}
     </div>
   );
 }

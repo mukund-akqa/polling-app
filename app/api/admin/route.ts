@@ -3,7 +3,10 @@ import Poll from "@/models/Poll";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  return new Response("Hello world!");
+  await connectToDatabase();
+
+  const activePoll = await Poll.findOne({ active: true });
+  return NextResponse.json({ active: !!activePoll });
 }
 
 export async function POST(request: Request) {
@@ -23,3 +26,5 @@ export async function POST(request: Request) {
   await poll.save();
   return NextResponse.json({ success: true, data: poll }, { status: 201 });
 }
+
+
